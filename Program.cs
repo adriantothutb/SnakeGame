@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-//using System.Text; nepoužívané, odstránené
-//using System.Threading.Tasks; nepoužívané, odstránené
-//using System.Threading; nepoužívané, odstránené
 
 namespace Snake
 {
+    enum Direction // pridanie enum typu
+    {
+        Up,
+        Down,
+        Left,
+        Right
+    }
     class Program
     {
         static void Main(string[] args)
@@ -19,10 +23,10 @@ namespace Snake
             int score = 5;
             bool gameOver = false;
             Pixel head = new Pixel();
-            head.XPos = screenWidth / 2; //pridanie medzier pre lepšiu čitateľnosť
-            head.YPos = screenHeight / 2; //pridanie medzier pre lepšiu čitateľnosť
+            head.XPos = screenWidth / 2;
+            head.YPos = screenHeight / 2;
             head.ConsoleColor = ConsoleColor.Red;
-            string direction = "RIGHT";
+            Direction direction = Direction.Right; // zmena typu premennej
             List<int> bodyX = new List<int>();
             List<int> bodyY = new List<int>();
             int berryX = random.Next(0, screenWidth);
@@ -64,7 +68,7 @@ namespace Snake
                     berryX = random.Next(1, screenWidth-2);
                     berryY = random.Next(1, screenHeight-2);
                 } 
-                for (int i = 0; i < bodyX.Count; i++) // zmena LINQ metódy na vlastnosť Listu - rýchlejšie
+                for (int i = 0; i < bodyX.Count; i++)
                 {
                     Console.SetCursorPosition(bodyX[i], bodyY[i]);
                     Console.Write("■");
@@ -92,42 +96,42 @@ namespace Snake
                     if (Console.KeyAvailable)
                     {
                         ConsoleKeyInfo key = Console.ReadKey(true);
-                        if (key.Key.Equals(ConsoleKey.UpArrow) && direction != "DOWN" && !buttonPressed)
+                        if (key.Key.Equals(ConsoleKey.UpArrow) && direction != Direction.Down && !buttonPressed) // zmena podmienok pri stlačení klávesy
                         {
-                            direction = "UP";
+                            direction = Direction.Up;
                             buttonPressed = true;
                         }
-                        if (key.Key.Equals(ConsoleKey.DownArrow) && direction != "UP" && !buttonPressed)
+                        if (key.Key.Equals(ConsoleKey.DownArrow) && direction != Direction.Up && !buttonPressed)
                         {
-                            direction = "DOWN";
+                            direction = Direction.Down;
                             buttonPressed = true;
                         }
-                        if (key.Key.Equals(ConsoleKey.LeftArrow) && direction != "RIGHT" && !buttonPressed)
+                        if (key.Key.Equals(ConsoleKey.LeftArrow) && direction != Direction.Right && !buttonPressed)
                         {
-                            direction = "LEFT";
+                            direction = Direction.Left;
                             buttonPressed = true;
                         }
-                        if (key.Key.Equals(ConsoleKey.RightArrow) && direction != "LEFT" && !buttonPressed)
+                        if (key.Key.Equals(ConsoleKey.RightArrow) && direction != Direction.Left && !buttonPressed)
                         {
-                            direction = "RIGHT";
+                            direction = Direction.Right;
                             buttonPressed = true;
                         }
                     }
                 }
                 bodyX.Add(head.XPos);
                 bodyY.Add(head.YPos);
-                switch (direction)
+                switch (direction) // zmena switchu podľa enum typov
                 {
-                    case "UP":
+                    case Direction.Up:
                         head.YPos--;
                         break;
-                    case "DOWN":
+                    case Direction.Down:
                         head.YPos++;
                         break;
-                    case "LEFT":
+                    case Direction.Left:
                         head.XPos--;
                         break;
-                    case "RIGHT":
+                    case Direction.Right:
                         head.XPos++;
                         break;
                 }
@@ -139,7 +143,7 @@ namespace Snake
             }
             Console.SetCursorPosition(screenWidth / 5, screenHeight / 2);
             Console.WriteLine("Game over, Score: " + score);
-            Console.SetCursorPosition(screenWidth / 5, screenHeight / 2 + 1); // pridanie medzery pre lepšiu čitateľnosť
+            Console.SetCursorPosition(screenWidth / 5, screenHeight / 2 + 1);
         }
         class Pixel
         {
