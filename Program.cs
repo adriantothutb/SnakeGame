@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-// using System.Linq; - nepoužité, odstránené
+ using System.Collections.Generic;
 
 namespace Snake
 {
@@ -35,12 +34,12 @@ namespace Snake
             while (true)
             {
                 Console.Clear();
-                if (head.XPos == screenWidth - 1 || head.XPos == 0 ||head.YPos == screenHeight - 1 || head.YPos == 0)
-                { 
+                if (HitWall(head, screenWidth, screenHeight))  // kontrola kolízie so stenou presunutá do samostatnej metódy
+                {
                     gameOver = true;
                 }
 
-                DrawBorder(screenWidth, screenHeight); // vykreslenie rámika je oddelené od logiky hry
+                DrawBorder(screenWidth, screenHeight);
                 
                 Console.ForegroundColor = ConsoleColor.Green;
                 if (berryX == head.XPos && berryY == head.YPos)
@@ -50,7 +49,7 @@ namespace Snake
                     berryY = random.Next(1, screenHeight - 2);
                 } 
                 
-                if (DrawSnakeBody(bodyX, bodyY, head)) // kreslenie + kolízia tela v jednej metóde
+                if (DrawSnakeBody(bodyX, bodyY, head))
                 {
                     gameOver = true;
                 }
@@ -60,28 +59,16 @@ namespace Snake
                     break;
                 }
                 
-                DrawHead(head); // vykreslenie hlavy oddelené pre lepšiu čitateľnosť
-                DrawBerry(berryX, berryY); // vykreslenie berry oddelené (príprava na ďalšie oddelenie GUI)
+                DrawHead(head);
+                DrawBerry(berryX, berryY);
                 
-                direction = HandleInput(direction); // spracovanie vstupu oddelené od hlavnej logiky hry
+                direction = HandleInput(direction);
 
                 bodyX.Add(head.XPos);
                 bodyY.Add(head.YPos);
-                switch (direction)
-                {
-                    case Direction.Up:
-                        head.YPos--;
-                        break;
-                    case Direction.Down:
-                        head.YPos++;
-                        break;
-                    case Direction.Left:
-                        head.XPos--;
-                        break;
-                    case Direction.Right:
-                        head.XPos++;
-                        break;
-                }
+
+                MoveSnake(head, direction); // pohyb hada presunutý do samostatnej metódy
+
                 if (bodyX.Count > score)
                 {
                     bodyX.RemoveAt(0);
@@ -93,7 +80,7 @@ namespace Snake
             Console.SetCursorPosition(screenWidth / 5, screenHeight / 2 + 1);
         }
 
-        private static void DrawBorder(int screenWidth, int screenHeight) // rámik je čisto "GUI" záležitosť, preto je mimo hlavnej logiky hry
+        private static void DrawBorder(int screenWidth, int screenHeight)
         {
             for (int i = 0; i < screenWidth; i++)
             {
@@ -120,7 +107,7 @@ namespace Snake
             }
         }
 
-        private static bool DrawSnakeBody(List<int> bodyX, List<int> bodyY, Pixel head) // vykreslenie tela + kontrola kolízie na jednom mieste
+        private static bool DrawSnakeBody(List<int> bodyX, List<int> bodyY, Pixel head)
         {
             for (int i = 0; i < bodyX.Count; i++)
             {
@@ -129,28 +116,28 @@ namespace Snake
 
                 if (bodyX[i] == head.XPos && bodyY[i] == head.YPos)
                 {
-                    return true; // narazil do vlastného tela
+                    return true;
                 }
             }
 
             return false;
         }
 
-        private static void DrawHead(Pixel head) // samostatná metóda, aby Main() nebol zaplnený "Console.*" detailami
+        private static void DrawHead(Pixel head)
         {
             Console.SetCursorPosition(head.XPos, head.YPos);
             Console.ForegroundColor = head.ConsoleColor;
             Console.Write("■");
         }
 
-        private static void DrawBerry(int berryX, int berryY) // berry je samostatný "objekt na scéne"
+        private static void DrawBerry(int berryX, int berryY)
         {
             Console.SetCursorPosition(berryX, berryY);
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.Write("■");
         }
 
-        private static Direction HandleInput(Direction direction) // spracovanie vstupu presunuté z Main(), aby bola hlavná slučka hry čitateľnejšia 
+        private static Direction HandleInput(Direction direction)
         {
             DateTime frameStartTime = DateTime.Now;
             bool buttonPressed = false;
@@ -196,6 +183,37 @@ namespace Snake
 
             return direction;
         }
+
+        private static void MoveSnake(Pixel head, Direction direction) // pohyb hada oddelený od hlavnej hernej slučky
+        {
+            switch (direction)
+            {
+                case Direction.Up:
+                    head.YPos--;
+                    break;
+
+                case Direction.Down:
+                    head.YPos++;
+                    break;
+
+                case Direction.Left:
+                    head.XPos--;
+                    break;
+
+                case Direction.Right:
+                    head.XPos++;
+                    break;
+            }
+        }
+
+        private static bool HitWall(Pixel head, int screenWidth, int screenHeight) // kontrola nárazu do steny oddelená od hlavnej logiky hry
+        {
+            return head.XPos == screenWidth - 1 ||
+                head.XPos == 0 ||
+                head.YPos == screenHeight - 1 ||
+                head.YPos == 0;
+        }
+
         class Pixel
         {
             public int XPos { get; set; }
