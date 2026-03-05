@@ -1,5 +1,5 @@
 ﻿using System;
- using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace Snake
 {
@@ -11,7 +11,7 @@ namespace Snake
         Right
     }
 
-    struct Position // pridanie štruktúry pozície, X a Y patria k sebe, preto ich uložíme do jednej štruktúry (namiesto dvoch zoznamov)
+    struct Position
     {
         public int X { get; }
         public int Y { get; }
@@ -39,9 +39,8 @@ namespace Snake
             head.YPos = screenHeight / 2;
             head.ConsoleColor = ConsoleColor.Red;
             Direction direction = Direction.Right;
-            List<Position> body = new List<Position>(); // telo hada sa drží ako zoznam pozícií (X,Y spolu)
-            int berryX = random.Next(0, screenWidth);
-            int berryY = random.Next(0, screenHeight);
+            List<Position> body = new List<Position>();
+            Position berry = SpawnBerry(random, screenWidth, screenHeight); // bobuľa je jedna pozícia (X,Y spolu)
  
             while (true)
             {
@@ -53,13 +52,7 @@ namespace Snake
 
                 DrawBorder(screenWidth, screenHeight);
                 
-                Console.ForegroundColor = ConsoleColor.Green;
-                if (berryX == head.XPos && berryY == head.YPos)
-                {
-                    score++;
-                    berryX = random.Next(1, screenWidth - 2);
-                    berryY = random.Next(1, screenHeight - 2);
-                } 
+                TryEatBerry(head, ref berry, random, screenWidth, screenHeight, ref score); // logika bobule je mimo Main() 
                 
                 if (DrawSnakeBody(body, head))
                 {
@@ -72,17 +65,17 @@ namespace Snake
                 }
                 
                 DrawHead(head);
-                DrawBerry(berryX, berryY);
+                DrawBerry(berry);
                 
                 direction = HandleInput(direction);
 
-                body.Add(new Position(head.XPos, head.YPos)); // uloženie predchádzajúcej pozície hlavy do tela hada
+                body.Add(new Position(head.XPos, head.YPos));
 
                 MoveSnake(head, direction);
 
                 if (body.Count > score)
                 {
-                    body.RemoveAt(0); // z tela sa odstráni najstarší článok, aby dĺžka sedela na score
+                    body.RemoveAt(0);
                 }
             }
             Console.SetCursorPosition(screenWidth / 5, screenHeight / 2);
@@ -140,11 +133,27 @@ namespace Snake
             Console.Write("■");
         }
 
-        private static void DrawBerry(int berryX, int berryY)
+        private static void DrawBerry(Position berry) // bobuľa je pozícia, nie dve samostatné čísla
         {
-            Console.SetCursorPosition(berryX, berryY);
+            Console.SetCursorPosition(berry.X, berry.Y);
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.Write("■");
+        }
+
+        private static Position SpawnBerry(Random random, int screenWidth, int screenHeight) // bobuľa sa nesmie spawnovať na okraji (rámik)
+        {
+            int x = random.Next(1, screenWidth - 2);
+            int y = random.Next(1, screenHeight - 2);
+            return new Position(x, y);
+        }
+
+        private static void TryEatBerry(Pixel head, ref Position berry, Random random, int screenWidth, int screenHeight, ref int score)
+        {
+            if (head.XPos == berry.X && head.YPos == berry.Y) // ak hlava stojí na bobuli, tak ju zjedol
+            {
+                score++; // predĺženie hada (cez score)
+                berry = SpawnBerry(random, screenWidth, screenHeight); // presun bobuli na nové miesto
+            }
         }
 
         private static Direction HandleInput(Direction direction)
