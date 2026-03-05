@@ -10,6 +10,19 @@ namespace Snake
         Left,
         Right
     }
+
+    struct Position // pridanie štruktúry pozície, X a Y patria k sebe, preto ich uložíme do jednej štruktúry (namiesto dvoch zoznamov)
+    {
+        public int X { get; }
+        public int Y { get; }
+
+        public Position(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
@@ -26,15 +39,14 @@ namespace Snake
             head.YPos = screenHeight / 2;
             head.ConsoleColor = ConsoleColor.Red;
             Direction direction = Direction.Right;
-            List<int> bodyX = new List<int>();
-            List<int> bodyY = new List<int>();
+            List<Position> body = new List<Position>(); // telo hada sa drží ako zoznam pozícií (X,Y spolu)
             int berryX = random.Next(0, screenWidth);
             int berryY = random.Next(0, screenHeight);
  
             while (true)
             {
                 Console.Clear();
-                if (HitWall(head, screenWidth, screenHeight))  // kontrola kolízie so stenou presunutá do samostatnej metódy
+                if (HitWall(head, screenWidth, screenHeight))
                 {
                     gameOver = true;
                 }
@@ -49,7 +61,7 @@ namespace Snake
                     berryY = random.Next(1, screenHeight - 2);
                 } 
                 
-                if (DrawSnakeBody(bodyX, bodyY, head))
+                if (DrawSnakeBody(body, head))
                 {
                     gameOver = true;
                 }
@@ -64,15 +76,13 @@ namespace Snake
                 
                 direction = HandleInput(direction);
 
-                bodyX.Add(head.XPos);
-                bodyY.Add(head.YPos);
+                body.Add(new Position(head.XPos, head.YPos)); // uloženie predchádzajúcej pozície hlavy do tela hada
 
-                MoveSnake(head, direction); // pohyb hada presunutý do samostatnej metódy
+                MoveSnake(head, direction);
 
-                if (bodyX.Count > score)
+                if (body.Count > score)
                 {
-                    bodyX.RemoveAt(0);
-                    bodyY.RemoveAt(0);
+                    body.RemoveAt(0); // z tela sa odstráni najstarší článok, aby dĺžka sedela na score
                 }
             }
             Console.SetCursorPosition(screenWidth / 5, screenHeight / 2);
@@ -107,14 +117,14 @@ namespace Snake
             }
         }
 
-        private static bool DrawSnakeBody(List<int> bodyX, List<int> bodyY, Pixel head)
+        private static bool DrawSnakeBody(List<Position> body, Pixel head)
         {
-            for (int i = 0; i < bodyX.Count; i++)
+            for (int i = 0; i < body.Count; i++)
             {
-                Console.SetCursorPosition(bodyX[i], bodyY[i]);
+                Console.SetCursorPosition(body[i].X, body[i].Y);
                 Console.Write("■");
 
-                if (bodyX[i] == head.XPos && bodyY[i] == head.YPos)
+                if (body[i].X == head.XPos && body[i].Y == head.YPos)
                 {
                     return true;
                 }
@@ -184,7 +194,7 @@ namespace Snake
             return direction;
         }
 
-        private static void MoveSnake(Pixel head, Direction direction) // pohyb hada oddelený od hlavnej hernej slučky
+        private static void MoveSnake(Pixel head, Direction direction)
         {
             switch (direction)
             {
@@ -206,9 +216,9 @@ namespace Snake
             }
         }
 
-        private static bool HitWall(Pixel head, int screenWidth, int screenHeight) // kontrola nárazu do steny oddelená od hlavnej logiky hry
+        private static bool HitWall(Pixel head, int screenWidth, int screenHeight)
         {
-            return head.XPos == screenWidth - 1 ||
+                return head.XPos == screenWidth - 1 ||
                 head.XPos == 0 ||
                 head.YPos == screenHeight - 1 ||
                 head.YPos == 0;
