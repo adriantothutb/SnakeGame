@@ -4,7 +4,7 @@ namespace Snake
 {
     class SnakeGame
     {
-        public GameState State { get; }
+        private GameState State { get; }
 
         public SnakeGame(GameState state)
         {
@@ -62,19 +62,31 @@ namespace Snake
             }
         }
 
-        public void SpawnBerry()
+        public void SpawnBerry() // namiesto náhodného skúšania sa najprv zistí zoznam voľných políčok a potom sa 1 vyberie
         {
-            Position newBerry;
+            var freePositions = new List<Position>();
 
-            do
+            for (int x = 1; x < State.ScreenWidth - 1; x++)
             {
-                int x = State.Random.Next(1, State.ScreenWidth - 2);
-                int y = State.Random.Next(1, State.ScreenHeight - 2);
-                newBerry = new Position(x, y);
-            }
-            while (IsSnakePosition(newBerry));
+                for (int y = 1; y < State.ScreenHeight - 1; y++)
+                {
+                    var position = new Position(x, y);
 
-            State.Berry = newBerry;
+                    if (!IsSnakePosition(position))
+                    {
+                        freePositions.Add(position);
+                    }
+                }
+            }
+
+            if (freePositions.Count == 0)
+            {
+                State.GameOver = true;
+                return;
+            }
+
+            int index = State.Random.Next(freePositions.Count);
+            State.Berry = freePositions[index];
         }
 
         private Position MoveSnake(Position head, Direction direction)
