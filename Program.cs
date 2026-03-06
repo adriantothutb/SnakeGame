@@ -26,24 +26,28 @@ namespace Snake
     class Program
     {
         const char Block = '■';
+        const int WindowHeight = 16;   // výška herného okna
+        const int WindowWidth = WindowHeight * 2;  // šírka je dvojnásobná kvôli obdĺžnikovým bunkám konzoly
+        const int InitialScore = 5;    // počiatočná dĺžka hada
+        const int FrameDelay = 500;    // čas medzi pohybmi hada (ms)
 
-        private class GameState // stav hry sa drží na jednom mieste, aby sa logika ľahšie upratovala a testovala
+        private class GameState
         {
             public int ScreenWidth { get; }
             public int ScreenHeight { get; }
 
             public Random Random { get; }
 
-            public int Score { get; set; } // dĺžka hada je naviazaná na score (pôvodná logika ostáva)
+            public int Score { get; set; }
             public bool GameOver { get; set; }
 
-            public Position Head { get; set; } // hlava je pozícia (X,Y)
+            public Position Head { get; set; }
             public ConsoleColor HeadColor { get; set; }
 
             public Direction Direction { get; set; }
 
-            public List<Position> Body { get; } = new List<Position>(); // telo je zoznam pozícií
-            public Position Berry { get; set; } // bobuľa je tiež pozícia
+            public List<Position> Body { get; } = new List<Position>();
+            public Position Berry { get; set; }
 
             public GameState(int screenWidth, int screenHeight, Random random)
             {
@@ -55,61 +59,78 @@ namespace Snake
 
         static void Main(string[] args)
         {
-            Console.WindowHeight = 16;
-            Console.WindowWidth = 32;
-            int screenWidth = Console.WindowWidth;
-            int screenHeight = Console.WindowHeight;
+            Console.WindowHeight = WindowHeight;
+            Console.WindowWidth = WindowWidth;
 
-            GameState state = new GameState(screenWidth, screenHeight, new Random()); // všetky dôležité hodnoty pôjdu cez state
-            state.Score = 5;
+            GameState state = new GameState(WindowWidth, WindowHeight, new Random()); // rozmery hry sú dané konštantami
+            state.Score = InitialScore;
             state.GameOver = false;
 
-            state.Head = new Position(screenWidth / 2, screenHeight / 2);
+            state.Head = new Position(WindowWidth / 2, WindowHeight / 2);
             state.HeadColor = ConsoleColor.Red;
 
             state.Direction = Direction.Right;
 
-            state.Berry = SpawnBerry(state.Random, state.ScreenWidth, state.ScreenHeight); // bobuľa sa spawnne hneď na začiatku
+            state.Berry = SpawnBerry(state.Random, state.ScreenWidth, state.ScreenHeight);
  
             while (true)
             {
-                Console.Clear();
-                if (HitWall(state.Head, state.ScreenWidth, state.ScreenHeight)) // čítajú sa rozmery zo state
-                {
-                    state.GameOver = true;
-                }
+                Render(state); // vykreslenie je oddelené od logiky hry
 
-                DrawBorder(state.ScreenWidth, state.ScreenHeight);
-                
-                TryEatBerry(state); // logika bobule bude pracovať priamo so stavom hry
-                
-                if (DrawSnakeBody(state.Body, state.Head))
-                {
-                    state.GameOver = true;
-                }
-                
                 if (state.GameOver)
                 {
                     break;
                 }
-                
-                DrawHead(state.Head, state.HeadColor);
-                DrawBerry(state.Berry);
-                
+
                 state.Direction = HandleInput(state.Direction);
-
-                state.Body.Add(state.Head); // uloží sa predchádzajúca pozícia hlavy do tela hada
-
-                state.Head = MoveSnake(state.Head, state.Direction);
-
-                if (state.Body.Count > state.Score)
-                {
-                    state.Body.RemoveAt(0);
-                }
+                Update(state); // zmena stavu hry je na jednom mieste
             }
             Console.SetCursorPosition(state.ScreenWidth / 5, state.ScreenHeight / 2);
             Console.WriteLine("Game over, Score: " + state.Score);
-            Console.SetCursorPosition(screenWidth / 5, screenHeight / 2 + 1);
+            Console.SetCursorPosition(state.ScreenWidth / 5, state.ScreenHeight / 2 + 1);
+        }
+
+        private static void Render(GameState state) // vykresľovanie je oddelené od aktualizácie herného stavu
+        {
+            Console.Clear();
+
+            DrawBorder(state.ScreenWidth, state.ScreenHeight);
+            DrawSnakeBody(state.Body);
+            DrawHead(state.Head, state.HeadColor);
+            DrawBerry(state.Berry);
+
+            if (state.GameOver)
+            {
+                Console.SetCursorPosition(state.ScreenWidth / 5, state.ScreenHeight / 2);
+                Console.WriteLine("Game over, Score: " + state.Score);
+                Console.SetCursorPosition(state.ScreenWidth / 5, state.ScreenHeight / 2 + 1);
+            }
+        }
+
+        private static void Update(GameState state) // všetky pravidlá hry sú sústredené na jednom mieste
+        {
+            if (HitWall(state.Head, state.ScreenWidth, state.ScreenHeight))
+            {
+                state.GameOver = true;
+                return;
+            }
+
+            TryEatBerry(state);
+
+            if (HitBody(state.Body, state.Head)) // kolíziu kontroluje logická metóda, kreslenie je oddelené
+            {
+                state.GameOver = true;
+                return;
+            }
+
+            state.Body.Add(state.Head); // uloží sa predchádzajúca pozícia hlavy do tela hada
+
+            state.Head = MoveSnake(state.Head, state.Direction);
+
+            if (state.Body.Count > state.Score)
+            {
+                state.Body.RemoveAt(0);
+            }
         }
 
         private static void DrawBorder(int screenWidth, int screenHeight)
@@ -139,13 +160,19 @@ namespace Snake
             }
         }
 
-        private static bool DrawSnakeBody(List<Position> body, Position head)
+        private static void DrawSnakeBody(List<Position> body) // kreslenie tela hada je oddelené od logiky kolízie
         {
             for (int i = 0; i < body.Count; i++)
             {
                 Console.SetCursorPosition(body[i].X, body[i].Y);
                 Console.Write(Block);
+            }
+        }
 
+        private static bool HitBody(List<Position> body, Position head) // kolízia s telom je logika hry, nie vykresľovanie
+        {
+            for (int i = 0; i < body.Count; i++)
+            {
                 if (body[i].X == head.X && body[i].Y == head.Y)
                 {
                     return true;
@@ -154,7 +181,7 @@ namespace Snake
 
             return false;
         }
-
+        
         private static void DrawHead(Position head, ConsoleColor headColor)
         {
             Console.SetCursorPosition(head.X, head.Y);
@@ -176,7 +203,7 @@ namespace Snake
             return new Position(x, y);
         }
 
-        private static void TryEatBerry(GameState state) // metóda pracuje priamo so stavom hry, aby sa v Main() neriešili detaily
+        private static void TryEatBerry(GameState state)
         {
             if (state.Head.X == state.Berry.X && state.Head.Y == state.Berry.Y)
             {
@@ -194,7 +221,7 @@ namespace Snake
             {
                 DateTime currentTime = DateTime.Now;
 
-                if (currentTime.Subtract(frameStartTime).TotalMilliseconds > 500)
+                if (currentTime.Subtract(frameStartTime).TotalMilliseconds > FrameDelay) // použitie konštanty namiesto magic number
                 {
                     break;
                 }
