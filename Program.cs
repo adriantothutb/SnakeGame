@@ -25,6 +25,8 @@ namespace Snake
 
     class Program
     {
+        const char Block = '■'; // spoločný symbol pre hada, telo aj rámik (odstránenie duplicity znaku v kóde)
+
         static void Main(string[] args)
         {
             Console.WindowHeight = 16;
@@ -34,13 +36,11 @@ namespace Snake
             Random random = new Random();
             int score = 5;
             bool gameOver = false;
-            Pixel head = new Pixel();
-            head.XPos = screenWidth / 2;
-            head.YPos = screenHeight / 2;
-            head.ConsoleColor = ConsoleColor.Red;
+            Position head = new Position(screenWidth / 2, screenHeight / 2); // hlava hada je len pozícia (X,Y), nie je potreba osobitnej triedy
+            ConsoleColor headColor = ConsoleColor.Red; // farbu sa drží samostatne, aby Position zostal čistý (iba súradnice)
             Direction direction = Direction.Right;
             List<Position> body = new List<Position>();
-            Position berry = SpawnBerry(random, screenWidth, screenHeight); // bobuľa je jedna pozícia (X,Y spolu)
+            Position berry = SpawnBerry(random, screenWidth, screenHeight);
  
             while (true)
             {
@@ -52,7 +52,7 @@ namespace Snake
 
                 DrawBorder(screenWidth, screenHeight);
                 
-                TryEatBerry(head, ref berry, random, screenWidth, screenHeight, ref score); // logika bobule je mimo Main() 
+                TryEatBerry(head, ref berry, random, screenWidth, screenHeight, ref score);
                 
                 if (DrawSnakeBody(body, head))
                 {
@@ -64,14 +64,14 @@ namespace Snake
                     break;
                 }
                 
-                DrawHead(head);
+                DrawHead(head, headColor); // vykreslenie hlavy - pozícia + farba
                 DrawBerry(berry);
                 
                 direction = HandleInput(direction);
 
-                body.Add(new Position(head.XPos, head.YPos));
+                body.Add(head); // uloží sa predchádzajúca pozícia hlavy do tela hada
 
-                MoveSnake(head, direction);
+                head = MoveSnake(head, direction); // hlava sa posunie a výsledná pozícia sa uloží späť
 
                 if (body.Count > score)
                 {
@@ -88,36 +88,36 @@ namespace Snake
             for (int i = 0; i < screenWidth; i++)
             {
                 Console.SetCursorPosition(i, 0);
-                Console.Write("■");
+                Console.Write(Block);
             }
 
             for (int i = 0; i < screenWidth; i++)
             {
                 Console.SetCursorPosition(i, screenHeight - 1);
-                Console.Write("■");
+                Console.Write(Block);
             }
 
             for (int i = 0; i < screenHeight; i++)
             {
                 Console.SetCursorPosition(0, i);
-                Console.Write("■");
+                Console.Write(Block);
             }
 
             for (int i = 0; i < screenHeight; i++)
             {
                 Console.SetCursorPosition(screenWidth - 1, i);
-                Console.Write("■");
+                Console.Write(Block);
             }
         }
 
-        private static bool DrawSnakeBody(List<Position> body, Pixel head)
+        private static bool DrawSnakeBody(List<Position> body, Position head) // hlava je teraz len Position, Pixel sa už nepoužíva
         {
             for (int i = 0; i < body.Count; i++)
             {
                 Console.SetCursorPosition(body[i].X, body[i].Y);
-                Console.Write("■");
+                Console.Write(Block);
 
-                if (body[i].X == head.XPos && body[i].Y == head.YPos)
+                if (body[i].X == head.X && body[i].Y == head.Y)
                 {
                     return true;
                 }
@@ -126,33 +126,33 @@ namespace Snake
             return false;
         }
 
-        private static void DrawHead(Pixel head)
+        private static void DrawHead(Position head, ConsoleColor headColor) // farba je mimo pozície, aby Position ostal "len súradnice"
         {
-            Console.SetCursorPosition(head.XPos, head.YPos);
-            Console.ForegroundColor = head.ConsoleColor;
-            Console.Write("■");
+            Console.SetCursorPosition(head.X, head.Y);
+            Console.ForegroundColor = headColor;
+            Console.Write(Block);
         }
 
-        private static void DrawBerry(Position berry) // bobuľa je pozícia, nie dve samostatné čísla
+        private static void DrawBerry(Position berry)
         {
             Console.SetCursorPosition(berry.X, berry.Y);
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("■");
+            Console.Write(Block);
         }
 
-        private static Position SpawnBerry(Random random, int screenWidth, int screenHeight) // bobuľa sa nesmie spawnovať na okraji (rámik)
+        private static Position SpawnBerry(Random random, int screenWidth, int screenHeight)
         {
             int x = random.Next(1, screenWidth - 2);
             int y = random.Next(1, screenHeight - 2);
             return new Position(x, y);
         }
 
-        private static void TryEatBerry(Pixel head, ref Position berry, Random random, int screenWidth, int screenHeight, ref int score)
+        private static void TryEatBerry(Position head, ref Position berry, Random random, int screenWidth, int screenHeight, ref int score) // hlava je pozícia (X,Y)
         {
-            if (head.XPos == berry.X && head.YPos == berry.Y) // ak hlava stojí na bobuli, tak ju zjedol
+            if (head.X == berry.X && head.Y == berry.Y) // ak hlava stojí na bobuli, tak ju zjedol
             {
-                score++; // predĺženie hada (cez score)
-                berry = SpawnBerry(random, screenWidth, screenHeight); // presun bobuli na nové miesto
+                score++;
+                berry = SpawnBerry(random, screenWidth, screenHeight); // presun bobule na nové miesto
             }
         }
 
@@ -203,41 +203,32 @@ namespace Snake
             return direction;
         }
 
-        private static void MoveSnake(Pixel head, Direction direction)
+        private static Position MoveSnake(Position head, Direction direction) // vracia sa nová pozícia, nemení sa vstup (ľahšie sa to číta)
         {
             switch (direction)
             {
                 case Direction.Up:
-                    head.YPos--;
-                    break;
+                    return new Position(head.X, head.Y - 1);
 
                 case Direction.Down:
-                    head.YPos++;
-                    break;
+                    return new Position(head.X, head.Y + 1);
 
                 case Direction.Left:
-                    head.XPos--;
-                    break;
+                    return new Position(head.X - 1, head.Y);
 
                 case Direction.Right:
-                    head.XPos++;
-                    break;
+                    return new Position(head.X + 1, head.Y);
+
+                default:
+                    return head; // poistka, keby pribudol nový smer
             }
         }
 
-        private static bool HitWall(Pixel head, int screenWidth, int screenHeight)
+        private static bool HitWall(Position head, int screenWidth, int screenHeight) // hlava je pozícia, nie je potreba Pixelu
         {
-                return head.XPos == screenWidth - 1 ||
-                head.XPos == 0 ||
-                head.YPos == screenHeight - 1 ||
-                head.YPos == 0;
+            return head.X == screenWidth - 1 || head.X == 0 || head.Y == screenHeight - 1 || head.Y == 0;
         }
-
-        class Pixel
-        {
-            public int XPos { get; set; }
-            public int YPos { get; set; }
-            public ConsoleColor ConsoleColor { get; set; }
-        }
+        
+        // zmazaná trieda Pixel
     }
 }
